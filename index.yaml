@@ -1,0 +1,54 @@
+apiVersion: v1
+entries:
+  actual-budget:
+  - apiVersion: v2
+    appVersion: latest
+    created: "2026-05-05T10:12:29.940745359Z"
+    dependencies:
+    - alias: enableActual
+      condition: enableActual.enabled
+      name: enable-actual
+      repository: file://../enable-actual
+      version: 0.0.2-dev.1.sha.245cc47
+    description: Helm chart for deploying Actual Budget with optional Enable Actual
+      support
+    digest: 2a06f34afd4d38fd0f06a5347a8d107417e52ddd131b09f434a5f4658ad2b407
+    home: https://actualbudget.org
+    keywords:
+    - actual-budget
+    - budgeting
+    - finance
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - name: BudgettedChart maintainers
+    name: actual-budget
+    sources:
+    - https://github.com/actualbudget/actual
+    - https://github.com/2manyvcos/enable-actual
+    type: application
+    urls:
+    - https://github.com/marchermans/BudgettedChart/releases/download/actual-budget-0.0.2-dev.1.sha.245cc47/actual-budget-0.0.2-dev.1.sha.245cc47.tgz
+    version: 0.0.2-dev.1.sha.245cc47
+  enable-actual:
+  - apiVersion: v2
+    appVersion: latest
+    created: "2026-05-05T10:12:30.10597821Z"
+    description: Helm chart for deploying Enable Actual (Enable Banking integration
+      for Actual Budget)
+    digest: e1eea6cf37c20e19dff7fe294ec1f747c12e68c3d590e48914031ad5ae5e39b2
+    home: https://github.com/2manyvcos/enable-actual
+    keywords:
+    - enable-actual
+    - enable-banking
+    - actual-budget
+    kubeVersion: '>=1.24.0-0'
+    maintainers:
+    - name: BudgettedChart maintainers
+    name: enable-actual
+    sources:
+    - https://github.com/2manyvcos/enable-actual
+    type: application
+    urls:
+    - https://github.com/marchermans/BudgettedChart/releases/download/enable-actual-0.0.2-dev.1.sha.245cc47/enable-actual-0.0.2-dev.1.sha.245cc47.tgz
+    version: 0.0.2-dev.1.sha.245cc47
+generated: "2026-05-05T10:12:30.105985333Z"
