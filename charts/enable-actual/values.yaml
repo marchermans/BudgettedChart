@@ -31,6 +31,16 @@ env:
 actualServerUrl: ""
 
 resources: {}
+
+podSecurityContext:
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

@@ -86,8 +86,12 @@ helm upgrade --install actual-budget ./charts/actual-budget \
 | `enableActual.persistence.enabled` | Create PVC for Enable Actual | `true` |
 | `enableActual.persistence.size` | PVC size for Enable Actual | `5Gi` |
 | `enableActual.ingress.enabled` | Expose Enable Actual through ingress | `false` |
+| `enableActual.podSecurityContext.fsGroup` | Group ownership applied to mounted volume files | `1000` |
+| `enableActual.containerSecurityContext.runAsUser` | Runtime UID for Enable Actual container | `1000` |
 
 If `enableActual.actualServerUrl` is empty, the subchart defaults to `http://<release>-actual-budget-actual:5006`.
+
+If your storage backend enforces existing ownership, you can override these IDs to match the volume permissions.
 
 ## CI/CD and publishing
 
