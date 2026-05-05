@@ -103,14 +103,12 @@ Two workflows are provided:
 
 ### Versioning strategy
 
-The release workflow uses a SemVer-like strategy:
+The release workflow runs on every push to `main` and computes a clean SemVer version from the git history — no manual tagging required for publishing.
 
-- Tag builds (`vX.Y.Z`) publish charts as exact `X.Y.Z`.
-- Main-branch builds (commits after the latest tag) publish prerelease versions:
-  - `<next-patch>-dev.<commits-since-tag>.sha.<shortsha>`
-  - Example: after `v1.4.2`, the next main commit can publish `1.4.3-dev.1.sha.abc1234`.
+- **After a `vX.Y.Z` tag**: `X.Y.(Z + commits_since_tag)` — e.g. after `v1.4.2`, the 3rd push publishes `1.4.5`.
+- **No tag yet**: `0.0.<total-commit-count>` — e.g. the 10th commit publishes `0.0.10`.
 
-If no SemVer tag exists yet, the workflow starts from `0.1.0-dev.<commit-count>.sha.<shortsha>`.
+Optional git tags (`vX.Y.Z`) can still be used as version anchors to reset the patch counter and signal intentional milestones, but they are not required for publishing.
 
 ### Required repository settings
 

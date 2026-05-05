@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -13,8 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  release-pages:
-    if: github.ref == 'refs/heads/main'
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,18 +28,19 @@ jobs:
         run: |
           set -euo pipefail
 
+          git fetch --tags --force
+
           latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
-          sha=$(git rev-parse --short HEAD)
 
           if [[ -n "${latest_tag}" ]]; then
             base="${latest_tag#v}"
             IFS='.' read -r major minor patch <<< "${base}"
             commits_since=$(git rev-list "${latest_tag}..HEAD" --count)
-            next_patch=$((patch + 1))
-            chart_version="${major}.${minor}.${next_patch}-dev.${commits_since}.sha.${sha}"
+            new_patch=$((patch + commits_since))
+            chart_version="${major}.${minor}.${new_patch}"
           else
             commits_since=$(git rev-list HEAD --count)
-            chart_version="0.1.0-dev.${commits_since}.sha.${sha}"
+            chart_version="0.0.${commits_since}"
           fi
 
           echo "chart_version=${chart_version}" >> "$GITHUB_OUTPUT"
@@ -61,6 +59,12 @@ jobs:
 
       - name: Lint chart
         run: helm lint charts/actual-budget
+
+      - name: Package charts
+        run: |
+          mkdir -p .cr-release-packages
+          helm package charts/enable-actual --destination .cr-release-packages
+          helm package charts/actual-budget --destination .cr-release-packages
 
       - name: Ensure gh-pages branch exists
         shell: bash
@@ -87,58 +91,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Install chart-releaser
+      - name: Publish chart index to GitHub Pages
         uses: helm/chart-releaser-action@v1.6.0
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CR_SKIP_EXISTING: true
-
-  release-oci:
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-
-      - name: Compute chart version from tag
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          ref_name="${GITHUB_REF_NAME}"
-
-          if [[ ! "${ref_name}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must match v<major>.<minor>.<patch>, got: ${ref_name}" >&2
-            exit 1
-          fi
-
-          chart_version="${ref_name#v}"
-          echo "chart_version=${chart_version}" >> "$GITHUB_OUTPUT"
-
-      - name: Apply tag version to charts
-        env:
-          CHART_VERSION: ${{ steps.version.outputs.chart_version }}
-        run: |
-          python3 .github/scripts/set_chart_version.py "${CHART_VERSION}"
-
-      - name: Update parent dependencies
-        run: helm dependency update charts/actual-budget
-
-      - name: Verify enable-actual chart
-        run: helm lint charts/enable-actual
-
-      - name: Verify chart
-        run: helm lint charts/actual-budget
-
-      - name: Package charts
-        run: |
-          helm package charts/enable-actual --destination .cr-release-packages
-          helm package charts/actual-budget --destination .cr-release-packages
 
       - name: Login to GHCR
         run: |
