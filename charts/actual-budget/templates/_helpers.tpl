@@ -1,12 +1,12 @@
 {{- define "actual-budget.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Chart.Name .Values.nameOverride | lower | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "actual-budget.fullname" -}}
 {{- if .Values.fullnameOverride -}}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- .Values.fullnameOverride | lower | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name (include "actual-budget.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" .Release.Name (include "actual-budget.name" .) | lower | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
 
