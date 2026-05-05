@@ -22,7 +22,7 @@ actual:
     tls: []
   env:
     ACTUAL_PORT: "5006"
-    ACTUAL_USER_CREATION_MODE: "open"
+    ACTUAL_USER_CREATION_MODE: "manual"
   resources: {}
   nodeSelector: {}
   tolerations: []
