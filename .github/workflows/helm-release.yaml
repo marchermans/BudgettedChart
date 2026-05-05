@@ -62,6 +62,24 @@ jobs:
       - name: Lint chart
         run: helm lint charts/actual-budget
 
+      - name: Ensure gh-pages branch exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            echo "gh-pages already exists"
+            exit 0
+          fi
+
+          echo "Creating orphan gh-pages branch"
+          current_branch=$(git branch --show-current)
+          git checkout --orphan gh-pages
+          git rm -rf . >/dev/null 2>&1 || true
+          git commit --allow-empty -m "chore: initialize gh-pages"
+          git push origin gh-pages
+          git checkout "${current_branch}"
+
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         env:
