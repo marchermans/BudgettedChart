@@ -1,0 +1,24 @@
+apiVersion: v2
+name: actual-budget
+description: Helm chart for deploying Actual Budget with optional Enable Actual support
+type: application
+version: 0.1.0
+appVersion: "latest"
+kubeVersion: ">=1.24.0-0"
+keywords:
+  - actual-budget
+  - budgeting
+  - finance
+home: https://actualbudget.org
+sources:
+  - https://github.com/actualbudget/actual
+  - https://github.com/2manyvcos/enable-actual
+maintainers:
+  - name: BudgettedChart maintainers
+dependencies:
+  - name: enable-actual
+    version: 0.1.0
+    repository: file://../enable-actual
+    condition: enableActual.enabled
+    alias: enableActual
+

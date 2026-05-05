@@ -1,0 +1,9 @@
+1. Enable Actual is available at:
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+  kubectl port-forward svc/{{ include "enable-actual.fullname" . }} 3000:{{ .Values.service.port }}
+{{- end }}
+

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: enable-actual
+description: Helm chart for deploying Enable Actual (Enable Banking integration for Actual Budget)
+type: application
+version: 0.1.0
+appVersion: "latest"
+kubeVersion: ">=1.24.0-0"
+keywords:
+  - enable-actual
+  - enable-banking
+  - actual-budget
+home: https://github.com/2manyvcos/enable-actual
+sources:
+  - https://github.com/2manyvcos/enable-actual
+maintainers:
+  - name: BudgettedChart maintainers
+

@@ -1,0 +1,6 @@
+dependencies:
+- name: enable-actual
+  repository: file://../enable-actual
+  version: 0.1.0
+digest: sha256:8632cbf55b5fedd98c632e97dc034b97830af517fc412936d0a185e05e1620cd
+generated: "2026-05-05T09:03:47.607584767+02:00"

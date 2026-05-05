@@ -1,0 +1,36 @@
+name: Helm Lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Build parent dependencies
+        run: helm dependency build charts/actual-budget
+
+      - name: Lint enable-actual chart
+        run: helm lint charts/enable-actual
+
+      - name: Lint chart
+        run: helm lint charts/actual-budget
+
+      - name: Render default manifests
+        run: helm template actual-budget charts/actual-budget >/dev/null
+
+      - name: Render standalone Enable Actual manifests
+        run: helm template enable-actual charts/enable-actual >/dev/null
+
+      - name: Render manifests with Enable Actual
+        run: helm template actual-budget charts/actual-budget --set enableActual.enabled=true >/dev/null
+

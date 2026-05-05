@@ -1,0 +1,19 @@
+{{- if and .Values.actual.persistence.enabled (not .Values.actual.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "actual-budget.actualPvcName" . }}
+  labels:
+    {{- include "actual-budget.labels" . | nindent 4 }}
+    app.kubernetes.io/component: actual
+spec:
+  accessModes:
+    {{- toYaml .Values.actual.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.actual.persistence.size }}
+  {{- if .Values.actual.persistence.storageClass }}
+  storageClassName: {{ .Values.actual.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+

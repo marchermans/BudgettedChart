@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "actual-budget.actualServiceName" . }}
+  labels:
+    {{- include "actual-budget.labels" . | nindent 4 }}
+    app.kubernetes.io/component: actual
+spec:
+  replicas: {{ .Values.actual.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ include "actual-budget.name" . }}
+      app.kubernetes.io/component: actual
+  template:
+    metadata:
+      labels:
+        {{- include "actual-budget.labels" . | nindent 8 }}
+        app.kubernetes.io/component: actual
+    spec:
+      containers:
+        - name: actual
+          image: "{{ .Values.actual.image.repository }}:{{ .Values.actual.image.tag }}"
+          imagePullPolicy: {{ .Values.actual.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.actual.service.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.actual.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.actual.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ default (include "actual-budget.actualPvcName" .) .Values.actual.persistence.existingClaim }}
+      {{- with .Values.actual.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.actual.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.actual.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

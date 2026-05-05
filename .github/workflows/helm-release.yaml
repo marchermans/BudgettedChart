@@ -1,0 +1,197 @@
+name: Helm Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-pages:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Compute chart version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          sha=$(git rev-parse --short HEAD)
+
+          if [[ -n "${latest_tag}" ]]; then
+            base="${latest_tag#v}"
+            IFS='.' read -r major minor patch <<< "${base}"
+            commits_since=$(git rev-list "${latest_tag}..HEAD" --count)
+            next_patch=$((patch + 1))
+            chart_version="${major}.${minor}.${next_patch}-dev.${commits_since}.sha.${sha}"
+          else
+            commits_since=$(git rev-list HEAD --count)
+            chart_version="0.1.0-dev.${commits_since}.sha.${sha}"
+          fi
+
+          echo "chart_version=${chart_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Apply computed version to charts
+        env:
+          CHART_VERSION: ${{ steps.version.outputs.chart_version }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          chart_version = os.environ["CHART_VERSION"]
+
+          def set_top_level_version(path: Path) -> None:
+            lines = path.read_text().splitlines()
+            for i, line in enumerate(lines):
+              if line.startswith("version:"):
+                lines[i] = f"version: {chart_version}"
+                break
+            path.write_text("\n".join(lines) + "\n")
+
+          enable_chart = Path("charts/enable-actual/Chart.yaml")
+          actual_chart = Path("charts/actual-budget/Chart.yaml")
+
+          set_top_level_version(enable_chart)
+          set_top_level_version(actual_chart)
+
+          actual_lines = actual_chart.read_text().splitlines()
+          in_enable_dep = False
+          for i, line in enumerate(actual_lines):
+            stripped = line.strip()
+            if stripped == "- name: enable-actual":
+              in_enable_dep = True
+              continue
+            if in_enable_dep and stripped.startswith("version:"):
+              indent = line[: len(line) - len(line.lstrip())]
+              actual_lines[i] = f"{indent}version: {chart_version}"
+              in_enable_dep = False
+
+          actual_chart.write_text("\n".join(actual_lines) + "\n")
+          PY
+
+      - name: Build parent dependencies
+        run: helm dependency build charts/actual-budget
+
+      - name: Lint enable-actual chart
+        run: helm lint charts/enable-actual
+
+      - name: Lint chart
+        run: helm lint charts/actual-budget
+
+      - name: Install chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_SKIP_EXISTING: true
+
+  release-oci:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Compute chart version from tag
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref_name="${GITHUB_REF_NAME}"
+
+          if [[ ! "${ref_name}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must match v<major>.<minor>.<patch>, got: ${ref_name}" >&2
+            exit 1
+          fi
+
+          chart_version="${ref_name#v}"
+          echo "chart_version=${chart_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Apply tag version to charts
+        env:
+          CHART_VERSION: ${{ steps.version.outputs.chart_version }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          chart_version = os.environ["CHART_VERSION"]
+
+          def set_top_level_version(path: Path) -> None:
+            lines = path.read_text().splitlines()
+            for i, line in enumerate(lines):
+              if line.startswith("version:"):
+                lines[i] = f"version: {chart_version}"
+                break
+            path.write_text("\n".join(lines) + "\n")
+
+          enable_chart = Path("charts/enable-actual/Chart.yaml")
+          actual_chart = Path("charts/actual-budget/Chart.yaml")
+
+          set_top_level_version(enable_chart)
+          set_top_level_version(actual_chart)
+
+          actual_lines = actual_chart.read_text().splitlines()
+          in_enable_dep = False
+          for i, line in enumerate(actual_lines):
+            stripped = line.strip()
+            if stripped == "- name: enable-actual":
+              in_enable_dep = True
+              continue
+            if in_enable_dep and stripped.startswith("version:"):
+              indent = line[: len(line) - len(line.lstrip())]
+              actual_lines[i] = f"{indent}version: {chart_version}"
+              in_enable_dep = False
+
+          actual_chart.write_text("\n".join(actual_lines) + "\n")
+          PY
+
+      - name: Build parent dependencies
+        run: helm dependency build charts/actual-budget
+
+      - name: Verify enable-actual chart
+        run: helm lint charts/enable-actual
+
+      - name: Verify chart
+        run: helm lint charts/actual-budget
+
+      - name: Package charts
+        run: |
+          helm package charts/enable-actual --destination .cr-release-packages
+          helm package charts/actual-budget --destination .cr-release-packages
+
+      - name: Login to GHCR
+        run: |
+          owner="${{ github.repository_owner }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${owner}" --password-stdin
+
+      - name: Push charts to GHCR (OCI)
+        run: |
+          actual_budget_version=$(awk '/^version:/{print $2}' charts/actual-budget/Chart.yaml)
+          enable_actual_version=$(awk '/^version:/{print $2}' charts/enable-actual/Chart.yaml)
+          owner="${{ github.repository_owner }}"
+          owner="${owner,,}"
+          helm push ".cr-release-packages/enable-actual-${enable_actual_version}.tgz" "oci://ghcr.io/${owner}/charts"
+          helm push ".cr-release-packages/actual-budget-${actual_budget_version}.tgz" "oci://ghcr.io/${owner}/charts"
+

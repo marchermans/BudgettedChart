@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "actual-budget.actualServiceName" . }}
+  labels:
+    {{- include "actual-budget.labels" . | nindent 4 }}
+    app.kubernetes.io/component: actual
+spec:
+  type: {{ .Values.actual.service.type }}
+  ports:
+    - port: {{ .Values.actual.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: {{ include "actual-budget.name" . }}
+    app.kubernetes.io/component: actual
+

@@ -1,0 +1,74 @@
+nameOverride: ""
+fullnameOverride: ""
+
+actual:
+  replicaCount: 1
+  image:
+    repository: actualbudget/actual-server
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5006
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: actual.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  env:
+    ACTUAL_PORT: "5006"
+    ACTUAL_USER_CREATION_MODE: "open"
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+
+enableActual:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: 2manyvcos/enable-actual
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: sync.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  env:
+    PUBLIC_URL: ""
+    SSL_ENABLED: "false"
+    LOG_LEVEL: info
+  actualServerUrl: ""
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+

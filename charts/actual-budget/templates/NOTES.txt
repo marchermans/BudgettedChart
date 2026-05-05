@@ -1,0 +1,10 @@
+1. Actual Budget is available at:
+{{- if .Values.actual.ingress.enabled }}
+{{- range .Values.actual.ingress.hosts }}
+  http{{ if $.Values.actual.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+  kubectl port-forward svc/{{ include "actual-budget.actualServiceName" . }} 5006:{{ .Values.actual.service.port }}
+{{- end }}
+
+
