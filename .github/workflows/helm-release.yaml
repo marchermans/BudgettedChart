@@ -51,43 +51,10 @@ jobs:
         env:
           CHART_VERSION: ${{ steps.version.outputs.chart_version }}
         run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
+          python3 .github/scripts/set_chart_version.py "${CHART_VERSION}"
 
-          chart_version = os.environ["CHART_VERSION"]
-
-          def set_top_level_version(path: Path) -> None:
-            lines = path.read_text().splitlines()
-            for i, line in enumerate(lines):
-              if line.startswith("version:"):
-                lines[i] = f"version: {chart_version}"
-                break
-            path.write_text("\n".join(lines) + "\n")
-
-          enable_chart = Path("charts/enable-actual/Chart.yaml")
-          actual_chart = Path("charts/actual-budget/Chart.yaml")
-
-          set_top_level_version(enable_chart)
-          set_top_level_version(actual_chart)
-
-          actual_lines = actual_chart.read_text().splitlines()
-          in_enable_dep = False
-          for i, line in enumerate(actual_lines):
-            stripped = line.strip()
-            if stripped == "- name: enable-actual":
-              in_enable_dep = True
-              continue
-            if in_enable_dep and stripped.startswith("version:"):
-              indent = line[: len(line) - len(line.lstrip())]
-              actual_lines[i] = f"{indent}version: {chart_version}"
-              in_enable_dep = False
-
-          actual_chart.write_text("\n".join(actual_lines) + "\n")
-          PY
-
-      - name: Build parent dependencies
-        run: helm dependency build charts/actual-budget
+      - name: Update parent dependencies
+        run: helm dependency update charts/actual-budget
 
       - name: Lint enable-actual chart
         run: helm lint charts/enable-actual
@@ -132,43 +99,10 @@ jobs:
         env:
           CHART_VERSION: ${{ steps.version.outputs.chart_version }}
         run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
+          python3 .github/scripts/set_chart_version.py "${CHART_VERSION}"
 
-          chart_version = os.environ["CHART_VERSION"]
-
-          def set_top_level_version(path: Path) -> None:
-            lines = path.read_text().splitlines()
-            for i, line in enumerate(lines):
-              if line.startswith("version:"):
-                lines[i] = f"version: {chart_version}"
-                break
-            path.write_text("\n".join(lines) + "\n")
-
-          enable_chart = Path("charts/enable-actual/Chart.yaml")
-          actual_chart = Path("charts/actual-budget/Chart.yaml")
-
-          set_top_level_version(enable_chart)
-          set_top_level_version(actual_chart)
-
-          actual_lines = actual_chart.read_text().splitlines()
-          in_enable_dep = False
-          for i, line in enumerate(actual_lines):
-            stripped = line.strip()
-            if stripped == "- name: enable-actual":
-              in_enable_dep = True
-              continue
-            if in_enable_dep and stripped.startswith("version:"):
-              indent = line[: len(line) - len(line.lstrip())]
-              actual_lines[i] = f"{indent}version: {chart_version}"
-              in_enable_dep = False
-
-          actual_chart.write_text("\n".join(actual_lines) + "\n")
-          PY
-
-      - name: Build parent dependencies
-        run: helm dependency build charts/actual-budget
+      - name: Update parent dependencies
+        run: helm dependency update charts/actual-budget
 
       - name: Verify enable-actual chart
         run: helm lint charts/enable-actual
