@@ -82,6 +82,11 @@ jobs:
           git push origin gh-pages
           git checkout "${current_branch}"
 
+      - name: Configure git for chart-releaser
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         env:
